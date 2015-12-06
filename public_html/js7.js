@@ -50,7 +50,7 @@ Vector.prototype.length = function() {
    , "nw" : new Vector(-1, -1)
  };
   
- var directionArray = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
+ var directionNames = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
 
  function Grid(width, height) {
      this.space = [];
@@ -60,46 +60,136 @@ Vector.prototype.length = function() {
      this.height = height;
  }
  Grid.prototype.isInside = function(vec) {
-     return vec.x <= this.width && vec.y <= this.height && vec.x >= 0 && vec.y >= 0;
+     return vec.x < this.width && vec.y < this.height && vec.x >= 0 && vec.y >= 0;
  };
  Grid.prototype.get = function(vec) {
-     return this.space[vec.x][vec.y];
+     return this.space[vec.y][vec.x];
  };
  Grid.prototype.set = function(vec, elem) {
-     this.space[vec.x][vec.y] = elem;
+     this.space[vec.y][vec.x] = elem;
+ };
+ Grid.prototype.forEach = function(f, context) {
+     for (var y = 0; y < this.height; y++) {
+         for (var x = 0; x < this.width; x++) {
+             if (this.space[y][x] !== null)
+                 f.call(context, this.space[y][x], new Vector(x, y));
+         }
+     }
  };
  
  var charLegend = {"#": "Wall", "o": "BouncingCritter"};
 
 function elemFromChar(legend, char) {
-     if (char === " ")
-         return null;
-     var element = {};
-     element.elem =  legend[char];
-     element.origChar = char;
-     return element;
+    if (char === " ")
+        return null;
+    //grab string from legend and create the corresponding object
+    //, which is how the book (tries) to do it
+    var element = new window[legend[char]]();
+    element.origChar = char;
+    return element;
  }
 
+function charFromElem(elem) {
+    if (elem === null)
+        return " ";
+    else
+        return elem.origChar;
+}
+
 function World(map, legend) {
-     var testRow = map[0];
-     this.worldGrid = new Grid(testRow.length, map.length);
+     this.worldGrid = new Grid(map[0].length, map.length);
      this.legend = legend;
-     for (var i = 0; i < map.length; i++) {
-         var row = map[i];
-         for (var j = 0; j < row.length; j++) {
-             this.worldGrid.set(new Vector(i, j), elemFromChar(charLegend, row[j]));
+     for (var y = 0; y < map.length; y++) {
+         for (var x = 0; x < map[y].length; x++) {
+            this.worldGrid.set(new Vector(x, y), elemFromChar(charLegend, map[y][x]));
          }
      }
  }
- 
- var worldA = new World(plan, charLegend);
+World.prototype.toString = function() {
+    var output = "";
+    for (var y = 0; y < this.worldGrid.height; y++) {
+        for (var x = 0; x < this.worldGrid.width; x++) {
+            output += charFromElem(this.worldGrid.get(new Vector(x,y)));
+        }
+        output += "\n";
+    }
+    return output;
+};
+World.prototype.turn = function() {
+    var alreadyActed = [];
+    this.worldGrid.forEach(function(elem, vector) {
+        console.log(elem);
+        if (elem.act && alreadyActed.indexOf(elem) === -1) {
+           alreadyActed.push(elem);
+           this.letAct(elem, vector);
+       }
+    }, this);
+};
+World.prototype.letAct = function(critter, vector) {
+    var action = critter.act(new View(this, vector));
+    if (action && action.type === "move") {
+        var dest = this.checkDestination(action, vector);
+        console.log("dest: " + dest);
+        if (dest && this.worldGrid.get(dest) === null) {
+            this.worldGrid.set(vector, null);
+            this.worldGrid.set(dest, critter);
+        }
+    }
+};
+World.prototype.checkDestination = function(action, vector) {
+    if (directions.hasOwnProperty(action.direction)) {
+        var dest = vector.plus(directions[action.direction]);
+        if (this.worldGrid.isInside(dest))
+            return dest;
+    }
+};
+
+function View(world, vector) {
+    this.world = world;
+    this.vector = vector;
+}
+View.prototype.look = function(dir) {
+    //sometimes dir is 0...
+    //console.log(dir);
+    //console.log(this.vector);
+    var target = this.vector.plus(directions[dir]);
+    //console.log("target: " + target.x + ", " + target.y);
+    if (this.world.worldGrid.isInside(target))
+        return charFromElem(this.world.worldGrid.get(target));
+    else
+        return "#";
+};
+View.prototype.findAll = function(ch) {
+    var found = [];
+    for (var dir in directionNames)
+        if (this.look(dir) === ch)
+            found.push(dir);
+    return found;
+};
+View.prototype.find = function(ch) {
+    var found = this.findAll(ch);
+    if (found.length === 0)
+        return null;
+    return randomElement(found);
+};
 
  function BouncingCritter() {
-     this.direction = randomElement(directionArray);
+     this.direction = randomElement(directionNames);
  }
- 
+BouncingCritter.prototype.act = function(view) {
+    //console.log(this.direction);
+    if (view.look(this.direction) !== " ")
+        this.direction = view.find(" ") || "s";
+    return { type: "move", direction: this.direction };
+};
+
+
  function Wall() {}
- 
- 
- 
- console.log(worldA);
+
+ var worldA = new World(plan, charLegend);
+
+console.log(worldA.toString());
+worldA.turn();
+//console.log(worldA.toString());
+
+
