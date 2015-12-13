@@ -77,14 +77,16 @@ Vector.prototype.length = function() {
      }
  };
  
- var charLegend = {"#": "Wall", "o": "BouncingCritter"};
+ //var charLegend = {"#": "Wall", "o": "BouncingCritter"};
 
 function elemFromChar(legend, char) {
     if (char === " ")
         return null;
     //grab string from legend and create the corresponding object
-    //, which is how the book (tries) to do it
-    var element = new window[legend[char]]();
+    //, which is how the book (tries) to do it; hitting bugs there
+    //WARNING - I can't use that method; temporarily using eval, which blows, but textbook should know better
+    //var element = new window[legend[char]]();
+    var element = eval("new " + legend[char] + "()");
     element.origChar = char;
     return element;
  }
@@ -118,7 +120,6 @@ World.prototype.toString = function() {
 World.prototype.turn = function() {
     var alreadyActed = [];
     this.worldGrid.forEach(function(elem, vector) {
-        console.log(elem);
         if (elem.act && alreadyActed.indexOf(elem) === -1) {
            alreadyActed.push(elem);
            this.letAct(elem, vector);
@@ -129,7 +130,6 @@ World.prototype.letAct = function(critter, vector) {
     var action = critter.act(new View(this, vector));
     if (action && action.type === "move") {
         var dest = this.checkDestination(action, vector);
-        console.log("dest: " + dest);
         if (dest && this.worldGrid.get(dest) === null) {
             this.worldGrid.set(vector, null);
             this.worldGrid.set(dest, critter);
@@ -144,16 +144,14 @@ World.prototype.checkDestination = function(action, vector) {
     }
 };
 
+function Wall() {}
+
 function View(world, vector) {
     this.world = world;
     this.vector = vector;
 }
 View.prototype.look = function(dir) {
-    //sometimes dir is 0...
-    //console.log(dir);
-    //console.log(this.vector);
     var target = this.vector.plus(directions[dir]);
-    //console.log("target: " + target.x + ", " + target.y);
     if (this.world.worldGrid.isInside(target))
         return charFromElem(this.world.worldGrid.get(target));
     else
@@ -161,7 +159,7 @@ View.prototype.look = function(dir) {
 };
 View.prototype.findAll = function(ch) {
     var found = [];
-    for (var dir in directionNames)
+    for (var dir in directions)
         if (this.look(dir) === ch)
             found.push(dir);
     return found;
@@ -177,19 +175,154 @@ View.prototype.find = function(ch) {
      this.direction = randomElement(directionNames);
  }
 BouncingCritter.prototype.act = function(view) {
-    //console.log(this.direction);
-    if (view.look(this.direction) !== " ")
+    if (view.look(this.direction) !== " ") {
         this.direction = view.find(" ") || "s";
+    }
+        
     return { type: "move", direction: this.direction };
 };
 
+ function dirPlus(direction, n) {
+     //returns the direction that is n 45-degree turns from the dir
+     var index = directionNames.indexOf(direction);
+     return directionNames[(index + n + 8) % 8];
+ }
 
- function Wall() {}
+function WallFollower() {
+  this.direction = "s";
+}
+WallFollower.prototype.act = function(view) {
+  var start = this.direction;
+  if (view.look(dirPlus(this.direction, -3)) !== " ")
+    start = this.direction = dirPlus(this.direction, -2);
+  while (view.look(this.direction) !== " ") {
+    this.direction = dirPlus(this.direction, 1);
+    if (this.direction === start) break;
+  }
+  return {type: "move", direction: this.direction};
+};
 
- var worldA = new World(plan, charLegend);
+function LifelikeWorld(map, legend) {
+  World.call(this, map, legend);
+}
+LifelikeWorld.prototype = Object.create(World.prototype);
 
+var actionTypes = Object.create(null);
+
+LifelikeWorld.prototype.letAct = function(critter, vector) {
+  var action = critter.act(new View(this, vector));
+  var handled = action &&
+    action.type in actionTypes &&
+    actionTypes[action.type].call(this, critter,
+                                  vector, action);
+  if (!handled) {
+    critter.energy -= 0.2;
+    if (critter.energy <= 0)
+      this.worldGrid.set(vector, null);
+  }
+};
+
+actionTypes.grow = function(critter) {
+  critter.energy += 0.5;
+  return true;
+};
+actionTypes.move = function(critter, vector, action) {
+  var dest = this.checkDestination(action, vector);
+  if (dest === null ||
+      critter.energy <= 1 ||
+      this.worldGrid.get(dest) !== null)
+    return false;
+  critter.energy -= 1;
+  this.worldGrid.set(vector, null);
+  this.worldGrid.set(dest, critter);
+  return true;
+};
+actionTypes.eat = function(critter, vector, action) {
+  var dest = this.checkDestination(action, vector);
+  var atDest = dest !== null && this.worldGrid.get(dest);
+  if (!atDest || atDest.energy === null)
+    return false;
+  critter.energy += atDest.energy;
+  this.worldGrid.set(dest, null);
+  return true;
+};
+actionTypes.reproduce = function(critter, vector, action) {
+  var baby = elemFromChar(this.legend,
+                             critter.origChar);
+  var dest = this.checkDestination(action, vector);
+  if (dest === null ||
+      critter.energy <= 2 * baby.energy ||
+      this.worldGrid.get(dest) !== null)
+    return false;
+  critter.energy -= 2 * baby.energy;
+  this.worldGrid.set(dest, baby);
+  return true;
+};
+
+function Plant() {
+  this.energy = 3 + Math.random() * 4;
+}
+Plant.prototype.act = function(view) {
+  if (this.energy > 15) {
+    var space = view.find(" ");
+    if (space)
+      return {type: "reproduce", direction: space};
+  }
+  if (this.energy < 20)
+    return {type: "grow"};
+};
+
+function PlantEater() {
+  this.energy = 30;
+}
+PlantEater.prototype.act = function(view) {
+  var space = view.find(" ");
+  if (this.energy > 90 && space)
+    return {type: "reproduce", direction: space};
+  var plant = view.find("*");
+  if (plant)
+    return {type: "eat", direction: plant};
+  if (space)
+    return {type: "move", direction: space};
+};
+
+var valley = 
+  ["############################",
+   "#####                 ######",
+   "##   ***      @         **##",
+   "#   *##**         **  O  *##",
+   "#    ***     O    ##**    *#",
+   "#       O         ##***    #",
+   "#                 ##**     #",
+   "#   O       #*@            #",
+   "#*          #**       O    #",
+   "#***    @   ##**    O    **#",
+   "##****     ###***       *###",
+   "############################"];
+   
+ var charLegend = {"#": "Wall", "O": "PlantEater", "*": "Plant", "@": "Predator"};
+
+//EXERCISE 1 - artificial stupidity - all you need to do is adjust so
+//the PlantEaters don't reproduce as often
+//EXERCISE 2 - see below
+
+function Predator() {
+  this.energy = 20;
+}
+Predator.prototype.act = function(view) {
+  var space = view.find(" ");
+  if (this.energy > 90 && space)
+    return {type: "reproduce", direction: space};
+  var plantEater = view.find("O");
+  if (plantEater)
+    return {type: "eat", direction: plantEater};
+  if (space)
+    return {type: "move", direction: space};
+}; 
+
+var worldA = new LifelikeWorld(valley, charLegend);
 console.log(worldA.toString());
-worldA.turn();
-//console.log(worldA.toString());
-
-
+for (var i = 0; i < 100; i++) {
+    worldA.turn();
+    console.log(worldA.toString());
+}
