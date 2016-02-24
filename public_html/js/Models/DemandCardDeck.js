@@ -1,12 +1,16 @@
 "use strict";
 
 define(['json!Data/data.json']
-    , function(DeckData) {
+    , function(JsonData) {
     var DemandCardDeck = function(round) {
         var deck = [];
+        console.log(JsonData.demandCards);
+        
+        //JsonData.demandCards.forEach(function(rnd) {
+        //    deck.push(rnd);
+        //});
 
-
-      this.someFunction = function() { return 4; }
+      this.printWholeDeck = function() { console.log(deck); }
       , this.randomFunction = function() { return 3; }
   };
   
