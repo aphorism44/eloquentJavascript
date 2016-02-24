@@ -1,15 +1,10 @@
 "use strict";
 
 
-require(['Models/Facility', 'json!Data/data.json']
-    , function(Facility, InitialData){
-        var facilities = [];
-        InitialData.facilityData.forEach(function(obj) {
-            facilities.push(new Facility(obj.type, obj.valueIncoming
-                , obj.valueOutgoing, obj.stockHoldingCost
-                , obj.openOrderCosts, obj.budget))
-        });
+require(['Models/Game', 'json!Data/data.json']
+    , function(Game, InitialData){
         
-        localStorage.facilities = JSON.stringify(facilities);   
-        facilities.forEach(function(f) { console.log(f.getValueOutgoing()); });
+        var game = new Game(InitialData);
+        game.printInformation();
+        
 });

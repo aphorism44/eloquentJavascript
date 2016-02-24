@@ -1,7 +1,14 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+"use strict";
+
+define(['json!Data/data.json']
+    , function(DeckData) {
+    var DemandCardDeck = function(round) {
+        var deck = [];
 
 
+      this.someFunction = function() { return 4; }
+      , this.randomFunction = function() { return 3; }
+  };
+  
+  return DemandCardDeck;
+});
