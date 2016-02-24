@@ -3,7 +3,7 @@
 define(['Models/Facility', 'Models/DemandCardDeck'], function(Facility, DemandCardDeck) {
     var Game = function(initialFacilityJSson) {
         var facilities = [];
-        var gameDeck = new DemandCardDeck(1);
+        var gameDeck = new DemandCardDeck();
         
         initialFacilityJSson.forEach(function(obj) {
             facilities.push(new Facility(obj.type, obj.valueIncoming
