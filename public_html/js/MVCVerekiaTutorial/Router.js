@@ -4,20 +4,19 @@
  * just use HTML5 history management */
 
 define(function(){
-
-    var routes = [{hash:'#list', controller:'ListController'},
-                  {hash:'#add',  controller:'AddController'}];
-    var defaultRoute = '#list';
-    var currentHash = '';
+    
+    //var routes = [{hash:'#list', controller:'ListController'},
+    //              {hash:'#add',  controller:'AddController'}];
+    //var defaultRoute = '#list';
+    //var currentHash = '';
     
     function startRouting(){
-        window.location.hash = window.location.hash || defaultRoute;
-        setInterval(hashCheck, 100);
+        history.pushState(routes[0], null, "index.html");
     }
-    
+    /*
     function hashCheck(){
         if (window.location.hash !== currentHash){
-            for (var i = 0, currentRoute; currentRoute === routes[i++];) {
+            for (var i = 0, currentRoute; currentRoute = routes[i++];){
                 if (window.location.hash === currentRoute.hash)
                     loadController(currentRoute.controller);
             }
@@ -30,11 +29,10 @@ define(function(){
             controller.start();
         });
     }
-    
+    */
     return {
         startRouting:startRouting
     };
 });
-
 
 

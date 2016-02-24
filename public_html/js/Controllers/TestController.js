@@ -13,7 +13,9 @@ define(['Views/AddView', 'Models/Facility'], function(AddView, Facility){
             var facilityType = document.getElementById('facility-type').value;
             facilities.push(new Facility(facilityType));
             localStorage.facilities = JSON.stringify(facilities);
-            window.location.hash = '#list';
+            require(['Controllers/ListController'], function(ListController){
+                ListController.start();
+            });
         }, false);
     }
 

@@ -1,0 +1,18 @@
+{
+   "facilityData" : [
+       {"type": "Factory", "valueIncoming": 1, "valueOutgoing": 4, "stockHoldingCost": 1.5
+            , "openOrderCosts": 2, "budget": 20}
+      , {"type": "Regional Warehouse", "valueIncoming": 4, "valueOutgoing": 7, "stockHoldingCost": 1.5
+            , "openOrderCosts": 2, "budget": 30}
+      , {"type": "Wholesale", "valueIncoming": 7, "valueOutgoing": 10, "stockHoldingCost": 1.5
+            , "openOrderCosts": 2, "budget": 45}
+      , {"type": "Retail", "valueIncoming": 10, "valueOutgoing": 13, "stockHoldingCost": 1.5
+            , "openOrderCosts": 2, "budget": 60} 
+   ]
+   , "demandCards": {
+       "2to5": [1, 2, 3, 3, 4, 5]
+       , "6to15": [4,6,1,2,3,3,4,5,0]
+       , "16to25": [1,2,2,3,3,3,4,4,4,5,5,6,0,7]
+   }
+
+}
