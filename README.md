@@ -1,8 +1,6 @@
 # eloquentJavascript
 
-In order to improve my JavaScript skills, I am using Marijn Haverbeke's textbook, "Eloquent JavaScript." This repository is a collection of the chapter-end exercises. I am using the NetBeans IDE (I am switching to NetBeans from Aptana Studio).
-
-At the same time, I'm developing my MVC skills in JavaScript through a number of tutorials.
+In order to improve my JavaScript skills, I used Marijn Haverbeke's textbook, "Eloquent JavaScript." This repository is a collection of the chapter-end exercises. I am using the NetBeans IDE (I am switching to NetBeans from Aptana Studio).
 
 All relevant JS files are located in the public_html folder.
 
